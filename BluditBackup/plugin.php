@@ -20,24 +20,35 @@ class bluditBackup extends Plugin
             if (!file_exists(PATH_CONTENT . 'BluditBackup/')) {
                 mkdir(PATH_CONTENT . 'BluditBackup/', 0755);
                 file_put_contents(PATH_CONTENT . 'BluditBackup/.htaccess', 'Allow from all');
-            };
+            }
 
-            if ($_POST['zip'] == 'all') {
-                $folderPath = PATH_ROOT;
-            } elseif ($_POST['zip'] == 'themes') {
-                $folderPath = PATH_THEMES;
-            } elseif ($_POST['zip'] == 'plugins') {
-                $folderPath = PATH_PLUGINS;
-            } elseif ($_POST['zip'] == 'pages') {
-                $folderPath = PATH_PAGES;
-            } elseif ($_POST['zip'] == 'database') {
-                $folderPath = PATH_DATABASES;
-            } elseif ($_POST['zip'] == 'plugins-database') {
-                $folderPath = PLUGINS_DATABASES;
-            } elseif ($_POST['zip'] == 'uploads') {
-                $folderPath = PATH_UPLOADS;
-            } elseif ($_POST['zip'] == 'content') {
-                $folderPath = PATH_CONTENT;
+            $folderPath = '';
+
+            switch ($_POST['zip']) {
+                case 'all':
+                    $folderPath = PATH_ROOT;
+                    break;
+                case 'themes':
+                    $folderPath = PATH_THEMES;
+                    break;
+                case 'plugins':
+                    $folderPath = PATH_PLUGINS;
+                    break;
+                case 'pages':
+                    $folderPath = PATH_PAGES;
+                    break;
+                case 'database':
+                    $folderPath = PATH_DATABASES;
+                    break;
+                case 'plugins-database':
+                    $folderPath = PLUGINS_DATABASES;
+                    break;
+                case 'uploads':
+                    $folderPath = PATH_UPLOADS;
+                    break;
+                case 'bl-content':
+                    $folderPath = PATH_CONTENT;
+                    break;
             }
 
             $zip = new ZipArchive();
@@ -45,31 +56,33 @@ class bluditBackup extends Plugin
 
             if ($zip->open($zipFileName, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
 
+                $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($folderPath));
 
-                $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($folderPath));
-
-                foreach ($files as $file) {
+                foreach ($iterator as $file) {
                     if (!$file->isDir()) {
                         $filePath = $file->getRealPath();
                         $relativePath = substr($filePath, strlen($folderPath));
 
-                        // Check if the file is read correctly
+                        // Sprawdź, czy plik jest prawidłowo odczytany
                         if ($content = file_get_contents($filePath)) {
-                            $zip->addFromString($relativePath, $content);
+                            if (strpos($filePath, PATH_CONTENT . 'BluditBackup') !== 0) {
+                                $zip->addFromString($relativePath, $content);
+                            }
                         }
                     }
                 }
 
-                // Check if closing the archive was successful
-                if ($zip->close() === true) {
-                    Alert::set('Archive created.');
+                 if ($zip->close() === true) {
+                    Alert::set('Archive Created');
                 } else {
                     Alert::set('Archive not created.');
                 }
             } else {
-                Alert::set('Failed to create the archive.');
+                Alert::set('Archive not created.');
             }
         };
+
+
     }
 
     public function adminView()
